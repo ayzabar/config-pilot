@@ -1,0 +1,170 @@
+{
+  "ingresses": {
+    "nginxes": {
+      "loadbalancer": {
+        "hostname": "matchmaking-dev.peak.com",
+        "configurationSnippet": "",
+        "proxy": {
+          "bodySize": 1,
+          "timeouts": {
+            "connectSeconds": 60,
+            "sendSeconds": 60,
+            "readSeconds": 60
+          }
+        },
+        "stickySession": {
+          "enabled": false,
+          "mode": "balanced",
+          "duration": 86400
+        }
+      }
+    },
+    "albs": {}
+  },
+  "services": {
+    "natives": {
+      "matchmaking": {
+        "ports": {
+          "http": {
+            "name": "http",
+            "port": 11888,
+            "targetPort": 8888,
+            "protocol": "TCP"
+          }
+        },
+        "monitorings": {}
+      }
+    },
+    "nlbs": {}
+  },
+  "workloads": {
+    "deployments": {
+      "matchmaking": {
+        "readinessGate": {
+          "enabled": false
+        },
+        "containers": {
+          "matchmaking": {
+            "image": "matchmaking:1.2.3",
+            "envs": {
+              "GAME_NAME": "toonblast"
+            },
+            "ports": {
+              "http": {
+                "name": "http",
+                "port": 8888,
+                "protocol": "TCP"
+              }
+            },
+            "readiness": {
+              "probe": {
+                "mergeAction": "overwrite",
+                "kind": "http",
+                "httpPath": "/ready",
+                "port": 8888
+              },
+              "initialDelaySeconds": 0,
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "liveness": {
+              "probe": {
+                "mergeAction": "overwrite",
+                "kind": "http",
+                "httpPath": "/live",
+                "port": 8888
+              },
+              "initialDelaySeconds": 0,
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "startup": {
+              "probe": {
+                "mergeAction": "overwrite",
+                "kind": "http",
+                "httpPath": "/start",
+                "port": 8888
+              },
+              "initialDelaySeconds": 0,
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "resources": {
+              "cpu": {
+                "limitMilliCPU": 500,
+                "requestMilliCPU": 100
+              },
+              "memory": {
+                "limitMiB": 1024,
+                "requestMiB": 512
+              }
+            },
+            "kind": "container",
+            "imagePullPolicy": "IfNotPresent",
+            "secretEnvs": {}
+          }
+        },
+        "monitorings": {
+          "log": {
+            "enabled": true,
+            "multiLineParser": ""
+          }
+        },
+        "kind": "deployment",
+        "metadata": {
+          "labels": {}
+        },
+        "replicas": 2,
+        "automountServiceAccountToken": true,
+        "terminationGracePeriodSeconds": 30,
+        "initContainers": {},
+        "nativeSidecarContainers": {},
+        "secrets": {},
+        "strategy": {
+          "kind": "rollingupdate",
+          "rollingUpdate": {
+            "maxSurge": "25%",
+            "maxUnavailable": "25%"
+          },
+          "mergeAction": "overwrite"
+        },
+        "permissions": {},
+        "injectors": {},
+        "topologySpread": [
+          {
+            "matchLabelKeys": [
+              "pod-template-hash"
+            ],
+            "maxSkew": 1,
+            "minDomains": 1,
+            "nodeAffinityPolicy": "Honor",
+            "nodeTaintsPolicy": "Honor",
+            "topologyKey": "topology.kubernetes.io/zone",
+            "whenUnsatisfiable": "DoNotSchedule"
+          }
+        ],
+        "scheduling": {
+          "podDisruptionBudget": {
+            "minAvailable": 1,
+            "maxUnavailable": null
+          }
+        }
+      }
+    },
+    "statefulsets": {},
+    "rollouts": {},
+    "daemonsets": {},
+    "cronjobs": {},
+    "jobs": {}
+  },
+  "storages": {},
+  "serviceGroup": "matchmaking",
+  "serviceEnv": "test",
+  "namespace": "toon"
+}

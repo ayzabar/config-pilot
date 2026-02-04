@@ -1,0 +1,1773 @@
+{
+  "default": {},
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "namespace": {
+      "type": "string"
+    },
+    "serviceGroup": {
+      "type": "string"
+    },
+    "serviceEnv": {
+      "type": "string"
+    },
+    "workloads": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "deployments": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {}
+        },
+        "statefulsets": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "tournament": {
+              "default": {},
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "default": "statefulset",
+                  "const": "statefulset",
+                  "type": "string"
+                },
+                "metadata": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "labels": {
+                      "default": {},
+                      "type": "object",
+                      "patternProperties": {
+                        "^(.*)$": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "labels"
+                  ]
+                },
+                "replicas": {
+                  "minimum": 0,
+                  "maximum": 999,
+                  "default": 2,
+                  "type": "number"
+                },
+                "automountServiceAccountToken": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "terminationGracePeriodSeconds": {
+                  "minimum": 0,
+                  "maximum": 9999,
+                  "default": 30,
+                  "type": "number"
+                },
+                "initContainers": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {}
+                },
+                "nativeSidecarContainers": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {}
+                },
+                "containers": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "tournament": {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "default": "container",
+                          "const": "container",
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string"
+                        },
+                        "imagePullPolicy": {
+                          "default": "IfNotPresent",
+                          "anyOf": [
+                            {
+                              "const": "Always",
+                              "type": "string"
+                            },
+                            {
+                              "const": "IfNotPresent",
+                              "type": "string"
+                            },
+                            {
+                              "const": "Never",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "resources": {
+                          "default": {},
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "cpu": {
+                              "default": {},
+                              "additionalProperties": false,
+                              "type": "object",
+                              "properties": {
+                                "limitMilliCPU": {
+                                  "minimum": 50,
+                                  "default": 200,
+                                  "type": "number"
+                                },
+                                "requestMilliCPU": {
+                                  "minimum": 50,
+                                  "default": 200,
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "limitMilliCPU",
+                                "requestMilliCPU"
+                              ]
+                            },
+                            "memory": {
+                              "default": {},
+                              "additionalProperties": false,
+                              "type": "object",
+                              "properties": {
+                                "limitMiB": {
+                                  "minimum": 32,
+                                  "default": 200,
+                                  "type": "number"
+                                },
+                                "requestMiB": {
+                                  "minimum": 32,
+                                  "default": 200,
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "limitMiB",
+                                "requestMiB"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "cpu",
+                            "memory"
+                          ]
+                        },
+                        "readiness": {
+                          "default": {},
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "initialDelaySeconds": {
+                              "minimum": 0,
+                              "default": 0,
+                              "type": "number"
+                            },
+                            "periodSeconds": {
+                              "minimum": 1,
+                              "default": 10,
+                              "type": "number"
+                            },
+                            "timeoutSeconds": {
+                              "minimum": 1,
+                              "default": 1,
+                              "type": "number"
+                            },
+                            "successThreshold": {
+                              "minimum": 1,
+                              "default": 1,
+                              "type": "number"
+                            },
+                            "failureThreshold": {
+                              "minimum": 1,
+                              "default": 3,
+                              "type": "number"
+                            },
+                            "probe": {
+                              "default": {
+                                "mergeAction": "overwrite"
+                              },
+                              "anyOf": [
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "command",
+                                      "const": "command",
+                                      "type": "string"
+                                    },
+                                    "command": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "command",
+                                    "mergeAction"
+                                  ]
+                                },
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "http",
+                                      "const": "http",
+                                      "type": "string"
+                                    },
+                                    "httpPath": {
+                                      "type": "string"
+                                    },
+                                    "port": {
+                                      "minimum": 1,
+                                      "maximum": 65535,
+                                      "type": "number"
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "httpPath",
+                                    "port",
+                                    "mergeAction"
+                                  ]
+                                },
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "httpWithHost",
+                                      "const": "httpWithHost",
+                                      "type": "string"
+                                    },
+                                    "httpPath": {
+                                      "type": "string"
+                                    },
+                                    "port": {
+                                      "minimum": 1,
+                                      "maximum": 65535,
+                                      "type": "number"
+                                    },
+                                    "host": {
+                                      "type": "string"
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "httpPath",
+                                    "port",
+                                    "host",
+                                    "mergeAction"
+                                  ]
+                                },
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "tcp",
+                                      "const": "tcp",
+                                      "type": "string"
+                                    },
+                                    "port": {
+                                      "minimum": 1,
+                                      "maximum": 65535,
+                                      "type": "number"
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "port",
+                                    "mergeAction"
+                                  ]
+                                }
+                              ],
+                              "discriminator": "kind"
+                            }
+                          },
+                          "required": [
+                            "initialDelaySeconds",
+                            "periodSeconds",
+                            "timeoutSeconds",
+                            "successThreshold",
+                            "failureThreshold",
+                            "probe"
+                          ]
+                        },
+                        "liveness": {
+                          "default": {},
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "initialDelaySeconds": {
+                              "minimum": 0,
+                              "default": 0,
+                              "type": "number"
+                            },
+                            "periodSeconds": {
+                              "minimum": 1,
+                              "default": 10,
+                              "type": "number"
+                            },
+                            "timeoutSeconds": {
+                              "minimum": 1,
+                              "default": 1,
+                              "type": "number"
+                            },
+                            "successThreshold": {
+                              "minimum": 1,
+                              "default": 1,
+                              "type": "number"
+                            },
+                            "failureThreshold": {
+                              "minimum": 1,
+                              "default": 3,
+                              "type": "number"
+                            },
+                            "probe": {
+                              "default": {
+                                "mergeAction": "overwrite"
+                              },
+                              "anyOf": [
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "command",
+                                      "const": "command",
+                                      "type": "string"
+                                    },
+                                    "command": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "command",
+                                    "mergeAction"
+                                  ]
+                                },
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "http",
+                                      "const": "http",
+                                      "type": "string"
+                                    },
+                                    "httpPath": {
+                                      "type": "string"
+                                    },
+                                    "port": {
+                                      "minimum": 1,
+                                      "maximum": 65535,
+                                      "type": "number"
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "httpPath",
+                                    "port",
+                                    "mergeAction"
+                                  ]
+                                },
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "httpWithHost",
+                                      "const": "httpWithHost",
+                                      "type": "string"
+                                    },
+                                    "httpPath": {
+                                      "type": "string"
+                                    },
+                                    "port": {
+                                      "minimum": 1,
+                                      "maximum": 65535,
+                                      "type": "number"
+                                    },
+                                    "host": {
+                                      "type": "string"
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "httpPath",
+                                    "port",
+                                    "host",
+                                    "mergeAction"
+                                  ]
+                                },
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "tcp",
+                                      "const": "tcp",
+                                      "type": "string"
+                                    },
+                                    "port": {
+                                      "minimum": 1,
+                                      "maximum": 65535,
+                                      "type": "number"
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "port",
+                                    "mergeAction"
+                                  ]
+                                }
+                              ],
+                              "discriminator": "kind"
+                            }
+                          },
+                          "required": [
+                            "initialDelaySeconds",
+                            "periodSeconds",
+                            "timeoutSeconds",
+                            "successThreshold",
+                            "failureThreshold",
+                            "probe"
+                          ]
+                        },
+                        "startup": {
+                          "default": {},
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "initialDelaySeconds": {
+                              "minimum": 0,
+                              "default": 0,
+                              "type": "number"
+                            },
+                            "periodSeconds": {
+                              "minimum": 1,
+                              "default": 10,
+                              "type": "number"
+                            },
+                            "timeoutSeconds": {
+                              "minimum": 1,
+                              "default": 1,
+                              "type": "number"
+                            },
+                            "successThreshold": {
+                              "minimum": 1,
+                              "default": 1,
+                              "type": "number"
+                            },
+                            "failureThreshold": {
+                              "minimum": 1,
+                              "default": 3,
+                              "type": "number"
+                            },
+                            "probe": {
+                              "default": {
+                                "mergeAction": "overwrite"
+                              },
+                              "anyOf": [
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "command",
+                                      "const": "command",
+                                      "type": "string"
+                                    },
+                                    "command": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "command",
+                                    "mergeAction"
+                                  ]
+                                },
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "http",
+                                      "const": "http",
+                                      "type": "string"
+                                    },
+                                    "httpPath": {
+                                      "type": "string"
+                                    },
+                                    "port": {
+                                      "minimum": 1,
+                                      "maximum": 65535,
+                                      "type": "number"
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "httpPath",
+                                    "port",
+                                    "mergeAction"
+                                  ]
+                                },
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "httpWithHost",
+                                      "const": "httpWithHost",
+                                      "type": "string"
+                                    },
+                                    "httpPath": {
+                                      "type": "string"
+                                    },
+                                    "port": {
+                                      "minimum": 1,
+                                      "maximum": 65535,
+                                      "type": "number"
+                                    },
+                                    "host": {
+                                      "type": "string"
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "httpPath",
+                                    "port",
+                                    "host",
+                                    "mergeAction"
+                                  ]
+                                },
+                                {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "default": "tcp",
+                                      "const": "tcp",
+                                      "type": "string"
+                                    },
+                                    "port": {
+                                      "minimum": 1,
+                                      "maximum": 65535,
+                                      "type": "number"
+                                    },
+                                    "mergeAction": {
+                                      "default": "overwrite",
+                                      "const": "overwrite",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "port",
+                                    "mergeAction"
+                                  ]
+                                }
+                              ],
+                              "discriminator": "kind"
+                            }
+                          },
+                          "required": [
+                            "initialDelaySeconds",
+                            "periodSeconds",
+                            "timeoutSeconds",
+                            "successThreshold",
+                            "failureThreshold",
+                            "probe"
+                          ]
+                        },
+                        "ports": {
+                          "default": {},
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "grpc": {
+                              "default": {},
+                              "additionalProperties": false,
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+                                  "maxLength": 15,
+                                  "type": "string"
+                                },
+                                "port": {
+                                  "minimum": 1,
+                                  "maximum": 65535,
+                                  "type": "number"
+                                },
+                                "protocol": {
+                                  "default": "TCP",
+                                  "anyOf": [
+                                    {
+                                      "const": "TCP",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "UDP",
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "port",
+                                "protocol"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "grpc"
+                          ]
+                        },
+                        "envs": {
+                          "default": {},
+                          "allOf": [
+                            {
+                              "default": {},
+                              "additionalProperties": true,
+                              "type": "object",
+                              "properties": {}
+                            },
+                            {
+                              "type": "object",
+                              "patternProperties": {
+                                "^(.*)$": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "secretEnvs": {
+                          "default": {},
+                          "allOf": [
+                            {
+                              "default": {},
+                              "additionalProperties": true,
+                              "type": "object",
+                              "properties": {}
+                            },
+                            {
+                              "type": "object",
+                              "patternProperties": {
+                                "^(.*)$": {
+                                  "default": {},
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "properties": {
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "secretName": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "key",
+                                    "secretName"
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "image",
+                        "imagePullPolicy",
+                        "resources",
+                        "readiness",
+                        "liveness",
+                        "startup",
+                        "ports",
+                        "envs",
+                        "secretEnvs"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tournament"
+                  ]
+                },
+                "secrets": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {}
+                },
+                "strategy": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "default": "rollingupdate",
+                      "const": "rollingupdate",
+                      "type": "string"
+                    },
+                    "rollingUpdate": {
+                      "default": {
+                        "partition": 0
+                      },
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "partition": {
+                          "minimum": 0,
+                          "default": 0,
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "partition"
+                      ]
+                    },
+                    "mergeAction": {
+                      "default": "overwrite",
+                      "const": "overwrite",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "rollingUpdate",
+                    "mergeAction"
+                  ]
+                },
+                "permissions": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "serviceAccount": {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "iamRole": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "iamRole"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "serviceAccount"
+                  ]
+                },
+                "storages": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "accessModes": {
+                          "default": [
+                            "ReadWriteOnce"
+                          ],
+                          "type": "array",
+                          "items": {
+                            "default": "ReadWriteOnce",
+                            "anyOf": [
+                              {
+                                "const": "ReadWriteOnce",
+                                "type": "string"
+                              },
+                              {
+                                "const": "ReadOnlyMany",
+                                "type": "string"
+                              },
+                              {
+                                "const": "ReadWriteMany",
+                                "type": "string"
+                              },
+                              {
+                                "const": "ReadWriteOncePod",
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "storageGibiBytes": {
+                          "minimum": 10,
+                          "default": 50,
+                          "type": "number"
+                        },
+                        "storageClass": {
+                          "default": "gp3",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "accessModes",
+                        "storageGibiBytes",
+                        "storageClass"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                },
+                "injectors": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {}
+                },
+                "monitorings": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "log": {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "default": true,
+                          "type": "boolean"
+                        },
+                        "multiLineParser": {
+                          "default": "",
+                          "anyOf": [
+                            {
+                              "const": "",
+                              "type": "string"
+                            },
+                            {
+                              "const": "peak_multiline_java",
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "multiLineParser"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "log"
+                  ]
+                },
+                "topologySpread": {
+                  "default": [
+                    {
+                      "matchLabelKeys": [],
+                      "maxSkew": 1,
+                      "minDomains": 1,
+                      "nodeAffinityPolicy": "Honor",
+                      "nodeTaintsPolicy": "Honor",
+                      "topologyKey": "topology.kubernetes.io/zone",
+                      "whenUnsatisfiable": "DoNotSchedule"
+                    }
+                  ],
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "default": {},
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "matchLabelKeys": {
+                            "default": [],
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "maxSkew": {
+                            "default": 1,
+                            "minimum": 1,
+                            "type": "number"
+                          },
+                          "minDomains": {
+                            "default": 1,
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "nodeAffinityPolicy": {
+                            "default": "Honor",
+                            "anyOf": [
+                              {
+                                "const": "Honor",
+                                "type": "string"
+                              },
+                              {
+                                "const": "Ignore",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "nodeTaintsPolicy": {
+                            "default": "Honor",
+                            "anyOf": [
+                              {
+                                "const": "Honor",
+                                "type": "string"
+                              },
+                              {
+                                "const": "Ignore",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "topologyKey": {
+                            "anyOf": [
+                              {
+                                "const": "kubernetes.io/hostname",
+                                "type": "string"
+                              },
+                              {
+                                "const": "topology.kubernetes.io/zone",
+                                "type": "string"
+                              },
+                              {
+                                "const": "topology.kubernetes.io/region",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "whenUnsatisfiable": {
+                            "default": "DoNotSchedule",
+                            "const": "DoNotSchedule",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "matchLabelKeys",
+                          "maxSkew",
+                          "minDomains",
+                          "nodeAffinityPolicy",
+                          "nodeTaintsPolicy",
+                          "topologyKey",
+                          "whenUnsatisfiable"
+                        ]
+                      },
+                      {
+                        "default": {},
+                        "additionalProperties": false,
+                        "type": "object",
+                        "properties": {
+                          "matchLabelKeys": {
+                            "default": [],
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "maxSkew": {
+                            "default": 1,
+                            "minimum": 1,
+                            "type": "number"
+                          },
+                          "nodeAffinityPolicy": {
+                            "default": "Honor",
+                            "anyOf": [
+                              {
+                                "const": "Honor",
+                                "type": "string"
+                              },
+                              {
+                                "const": "Ignore",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "nodeTaintsPolicy": {
+                            "default": "Honor",
+                            "anyOf": [
+                              {
+                                "const": "Honor",
+                                "type": "string"
+                              },
+                              {
+                                "const": "Ignore",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "topologyKey": {
+                            "anyOf": [
+                              {
+                                "const": "kubernetes.io/hostname",
+                                "type": "string"
+                              },
+                              {
+                                "const": "topology.kubernetes.io/zone",
+                                "type": "string"
+                              },
+                              {
+                                "const": "topology.kubernetes.io/region",
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "whenUnsatisfiable": {
+                            "default": "ScheduleAnyway",
+                            "const": "ScheduleAnyway",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "matchLabelKeys",
+                          "maxSkew",
+                          "nodeAffinityPolicy",
+                          "nodeTaintsPolicy",
+                          "topologyKey",
+                          "whenUnsatisfiable"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "scheduling": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "podDisruptionBudget": {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "minAvailable": {
+                          "anyOf": [
+                            {
+                              "minimum": 0,
+                              "default": 1,
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "maxUnavailable": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "minAvailable",
+                        "maxUnavailable"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "podDisruptionBudget"
+                  ]
+                },
+                "readinessGate": {
+                  "anyOf": [
+                    {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "default": false,
+                          "const": false,
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ]
+                    },
+                    {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "default": true,
+                          "const": true,
+                          "type": "boolean"
+                        },
+                        "sleepSeconds": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "sleepSeconds"
+                      ]
+                    }
+                  ],
+                  "discriminator": "enabled"
+                },
+                "podManagementPolicy": {
+                  "default": "OrderedReady",
+                  "anyOf": [
+                    {
+                      "const": "OrderedReady",
+                      "type": "string"
+                    },
+                    {
+                      "const": "Parallel",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "metadata",
+                "replicas",
+                "automountServiceAccountToken",
+                "terminationGracePeriodSeconds",
+                "initContainers",
+                "nativeSidecarContainers",
+                "containers",
+                "secrets",
+                "strategy",
+                "permissions",
+                "storages",
+                "injectors",
+                "monitorings",
+                "topologySpread",
+                "scheduling",
+                "readinessGate",
+                "podManagementPolicy"
+              ]
+            }
+          },
+          "required": [
+            "tournament"
+          ]
+        },
+        "rollouts": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {}
+        },
+        "daemonsets": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {}
+        },
+        "cronjobs": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {}
+        },
+        "jobs": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {}
+        }
+      },
+      "required": [
+        "deployments",
+        "statefulsets",
+        "rollouts",
+        "daemonsets",
+        "cronjobs",
+        "jobs"
+      ]
+    },
+    "ingresses": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "nginxes": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {}
+        },
+        "albs": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {}
+        }
+      },
+      "required": [
+        "nginxes",
+        "albs"
+      ]
+    },
+    "services": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "natives": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {}
+        },
+        "nlbs": {
+          "default": {},
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "tournament": {
+              "default": {},
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "accessLogs": {
+                  "default": {
+                    "mergeAction": "overwrite"
+                  },
+                  "anyOf": [
+                    {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "default": false,
+                          "const": false,
+                          "type": "boolean"
+                        },
+                        "mergeAction": {
+                          "default": "overwrite",
+                          "const": "overwrite",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "mergeAction"
+                      ]
+                    },
+                    {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "default": true,
+                          "const": true,
+                          "type": "boolean"
+                        },
+                        "bucket": {
+                          "type": "string"
+                        },
+                        "prefix": {
+                          "type": "string"
+                        },
+                        "mergeAction": {
+                          "default": "overwrite",
+                          "const": "overwrite",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "bucket",
+                        "prefix",
+                        "mergeAction"
+                      ]
+                    }
+                  ],
+                  "discriminator": "enabled"
+                },
+                "deletionProtection": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "clientRoutingPolicy": {
+                  "default": "any_availability_zone",
+                  "anyOf": [
+                    {
+                      "const": "any_availability_zone",
+                      "type": "string"
+                    },
+                    {
+                      "const": "availability_zone_affinity",
+                      "type": "string"
+                    },
+                    {
+                      "const": "partial_availability_zone_affinity",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "crossZoneLoadBalancing": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "proxyProtocol": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "ssl": {
+                  "default": {
+                    "mergeAction": "overwrite"
+                  },
+                  "anyOf": [
+                    {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "default": false,
+                          "const": false,
+                          "type": "boolean"
+                        },
+                        "mergeAction": {
+                          "default": "overwrite",
+                          "const": "overwrite",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "mergeAction"
+                      ]
+                    },
+                    {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "default": true,
+                          "const": true,
+                          "type": "boolean"
+                        },
+                        "certificate": {
+                          "type": "string"
+                        },
+                        "ports": {
+                          "default": [
+                            443
+                          ],
+                          "type": "array",
+                          "items": {
+                            "minimum": 1,
+                            "maximum": 65535,
+                            "type": "number"
+                          }
+                        },
+                        "mergeAction": {
+                          "default": "overwrite",
+                          "const": "overwrite",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "enabled",
+                        "certificate",
+                        "ports",
+                        "mergeAction"
+                      ]
+                    }
+                  ],
+                  "discriminator": "enabled"
+                },
+                "schema": {
+                  "default": "internal",
+                  "anyOf": [
+                    {
+                      "const": "internet-facing",
+                      "type": "string"
+                    },
+                    {
+                      "const": "internal",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "deregistrationDelay": {
+                  "minimum": 0,
+                  "maximum": 600,
+                  "default": 1,
+                  "type": "number"
+                },
+                "deregistrationConnectionTermination": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "preserveClientIP": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "healthcheck": {
+                  "default": {
+                    "healthyThreshold": 3,
+                    "unhealthyThreshold": 3,
+                    "interval": 10,
+                    "timeout": 10,
+                    "port": "traffic-port"
+                  },
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "probe": {
+                      "default": {
+                        "mergeAction": "overwrite"
+                      },
+                      "anyOf": [
+                        {
+                          "default": {},
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "default": "tcp",
+                              "const": "tcp",
+                              "type": "string"
+                            },
+                            "protocol": {
+                              "const": "TCP",
+                              "type": "string"
+                            },
+                            "mergeAction": {
+                              "default": "overwrite",
+                              "const": "overwrite",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "protocol",
+                            "mergeAction"
+                          ]
+                        },
+                        {
+                          "default": {},
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "default": "http",
+                              "const": "http",
+                              "type": "string"
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "successCodes": {
+                              "type": "string"
+                            },
+                            "protocol": {
+                              "anyOf": [
+                                {
+                                  "const": "HTTP",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "HTTPS",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "mergeAction": {
+                              "default": "overwrite",
+                              "const": "overwrite",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "path",
+                            "successCodes",
+                            "protocol",
+                            "mergeAction"
+                          ]
+                        }
+                      ],
+                      "discriminator": "kind"
+                    },
+                    "healthyThreshold": {
+                      "default": 3,
+                      "type": "number"
+                    },
+                    "unhealthyThreshold": {
+                      "default": 3,
+                      "type": "number"
+                    },
+                    "interval": {
+                      "default": 10,
+                      "type": "number"
+                    },
+                    "timeout": {
+                      "default": 10,
+                      "type": "number"
+                    },
+                    "port": {
+                      "default": "traffic-port",
+                      "anyOf": [
+                        {
+                          "minimum": 1,
+                          "maximum": 65535,
+                          "type": "number"
+                        },
+                        {
+                          "const": "traffic-port",
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "probe",
+                    "healthyThreshold",
+                    "unhealthyThreshold",
+                    "interval",
+                    "timeout",
+                    "port"
+                  ]
+                },
+                "ports": {
+                  "default": {},
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "grpc": {
+                      "default": {},
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "port": {
+                          "minimum": 1,
+                          "maximum": 65535,
+                          "type": "number"
+                        },
+                        "targetPort": {
+                          "minimum": 1,
+                          "maximum": 65535,
+                          "type": "number"
+                        },
+                        "protocol": {
+                          "default": "TCP",
+                          "anyOf": [
+                            {
+                              "const": "TCP",
+                              "type": "string"
+                            },
+                            {
+                              "const": "UDP",
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "port",
+                        "targetPort",
+                        "protocol"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "grpc"
+                  ]
+                },
+                "tags": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "default": {},
+                    "additionalProperties": false,
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "key",
+                      "value"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "accessLogs",
+                "deletionProtection",
+                "clientRoutingPolicy",
+                "crossZoneLoadBalancing",
+                "proxyProtocol",
+                "ssl",
+                "schema",
+                "deregistrationDelay",
+                "deregistrationConnectionTermination",
+                "preserveClientIP",
+                "healthcheck",
+                "ports",
+                "tags"
+              ]
+            }
+          },
+          "required": [
+            "tournament"
+          ]
+        }
+      },
+      "required": [
+        "natives",
+        "nlbs"
+      ]
+    },
+    "storages": {
+      "default": {},
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {}
+    }
+  },
+  "required": [
+    "namespace",
+    "serviceGroup",
+    "serviceEnv",
+    "workloads",
+    "ingresses",
+    "services",
+    "storages"
+  ]
+}

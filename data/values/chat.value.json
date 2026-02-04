@@ -1,0 +1,133 @@
+{
+  "workloads": {
+    "deployments": {
+      "chat": {
+        "maxUser": 10,
+        "readinessGate": {
+          "enabled": false
+        },
+        "containers": {
+          "chat": {
+            "image": "chat:1.0.0",
+            "readiness": {
+              "probe": {
+                "mergeAction": "overwrite",
+                "kind": "http",
+                "httpPath": "/ready",
+                "port": 6666
+              },
+              "initialDelaySeconds": 0,
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "liveness": {
+              "probe": {
+                "mergeAction": "overwrite",
+                "kind": "http",
+                "httpPath": "/live",
+                "port": 6666
+              },
+              "initialDelaySeconds": 0,
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "startup": {
+              "probe": {
+                "mergeAction": "overwrite",
+                "kind": "http",
+                "httpPath": "/start",
+                "port": 6666
+              },
+              "initialDelaySeconds": 0,
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "resources": {
+              "cpu": {
+                "limitMilliCPU": 1500,
+                "requestMilliCPU": 1000
+              },
+              "memory": {
+                "limitMiB": 2048,
+                "requestMiB": 512
+              }
+            },
+            "kind": "container",
+            "imagePullPolicy": "IfNotPresent",
+            "ports": {},
+            "envs": {},
+            "secretEnvs": {}
+          }
+        },
+        "monitorings": {
+          "log": {
+            "enabled": true,
+            "multiLineParser": ""
+          }
+        },
+        "kind": "deployment",
+        "metadata": {
+          "labels": {}
+        },
+        "replicas": 2,
+        "automountServiceAccountToken": true,
+        "terminationGracePeriodSeconds": 30,
+        "initContainers": {},
+        "nativeSidecarContainers": {},
+        "secrets": {},
+        "strategy": {
+          "kind": "rollingupdate",
+          "rollingUpdate": {
+            "maxSurge": "25%",
+            "maxUnavailable": "25%"
+          },
+          "mergeAction": "overwrite"
+        },
+        "permissions": {},
+        "injectors": {},
+        "topologySpread": [
+          {
+            "matchLabelKeys": [
+              "pod-template-hash"
+            ],
+            "maxSkew": 1,
+            "minDomains": 1,
+            "nodeAffinityPolicy": "Honor",
+            "nodeTaintsPolicy": "Honor",
+            "topologyKey": "topology.kubernetes.io/zone",
+            "whenUnsatisfiable": "DoNotSchedule"
+          }
+        ],
+        "scheduling": {
+          "podDisruptionBudget": {
+            "minAvailable": 1,
+            "maxUnavailable": null
+          }
+        }
+      }
+    },
+    "statefulsets": {},
+    "rollouts": {},
+    "daemonsets": {},
+    "cronjobs": {},
+    "jobs": {}
+  },
+  "ingresses": {
+    "nginxes": {},
+    "albs": {}
+  },
+  "services": {
+    "natives": {},
+    "nlbs": {}
+  },
+  "storages": {},
+  "serviceGroup": "chat",
+  "serviceEnv": "test",
+  "namespace": "chat"
+}

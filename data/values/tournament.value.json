@@ -1,0 +1,191 @@
+{
+  "services": {
+    "nlbs": {
+      "tournament": {
+        "accessLogs": {
+          "mergeAction": "overwrite",
+          "enabled": false
+        },
+        "ssl": {
+          "mergeAction": "overwrite",
+          "enabled": false
+        },
+        "healthcheck": {
+          "healthyThreshold": 3,
+          "unhealthyThreshold": 3,
+          "interval": 10,
+          "timeout": 10,
+          "port": "traffic-port",
+          "probe": {
+            "mergeAction": "overwrite",
+            "kind": "http",
+            "path": "/ready",
+            "successCodes": "200",
+            "protocol": "HTTP"
+          }
+        },
+        "ports": {
+          "grpc": {
+            "name": "grpc",
+            "port": 4444,
+            "targetPort": 4444,
+            "protocol": "TCP"
+          }
+        },
+        "deletionProtection": true,
+        "clientRoutingPolicy": "any_availability_zone",
+        "crossZoneLoadBalancing": true,
+        "proxyProtocol": false,
+        "schema": "internal",
+        "deregistrationDelay": 1,
+        "deregistrationConnectionTermination": false,
+        "preserveClientIP": false,
+        "tags": []
+      }
+    },
+    "natives": {}
+  },
+  "workloads": {
+    "statefulsets": {
+      "tournament": {
+        "readinessGate": {
+          "enabled": false
+        },
+        "containers": {
+          "tournament": {
+            "image": "tournament:3.2.2",
+            "ports": {
+              "grpc": {
+                "name": "grpc",
+                "port": 4444,
+                "protocol": "TCP"
+              }
+            },
+            "readiness": {
+              "probe": {
+                "mergeAction": "overwrite",
+                "kind": "http",
+                "httpPath": "/ready",
+                "port": 4444
+              },
+              "initialDelaySeconds": 0,
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "liveness": {
+              "probe": {
+                "mergeAction": "overwrite",
+                "kind": "http",
+                "httpPath": "/live",
+                "port": 4444
+              },
+              "initialDelaySeconds": 0,
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "startup": {
+              "probe": {
+                "mergeAction": "overwrite",
+                "kind": "http",
+                "httpPath": "/start",
+                "port": 4444
+              },
+              "initialDelaySeconds": 0,
+              "periodSeconds": 10,
+              "timeoutSeconds": 1,
+              "successThreshold": 1,
+              "failureThreshold": 3
+            },
+            "resources": {
+              "cpu": {
+                "limitMilliCPU": 2500,
+                "requestMilliCPU": 2000
+              },
+              "memory": {
+                "limitMiB": 4096,
+                "requestMiB": 4096
+              }
+            },
+            "kind": "container",
+            "imagePullPolicy": "IfNotPresent",
+            "envs": {},
+            "secretEnvs": {}
+          }
+        },
+        "monitorings": {
+          "log": {
+            "enabled": true,
+            "multiLineParser": ""
+          }
+        },
+        "kind": "statefulset",
+        "metadata": {
+          "labels": {}
+        },
+        "replicas": 2,
+        "automountServiceAccountToken": true,
+        "terminationGracePeriodSeconds": 30,
+        "initContainers": {},
+        "nativeSidecarContainers": {},
+        "secrets": {},
+        "strategy": {
+          "kind": "rollingupdate",
+          "rollingUpdate": {
+            "partition": 0
+          },
+          "mergeAction": "overwrite"
+        },
+        "permissions": {
+          "serviceAccount": {
+            "iamRole": "arn:aws:iam::111111111111:role/kubernetes-test-tournament"
+          }
+        },
+        "storages": {
+          "data": {
+            "accessModes": [
+              "ReadWriteOnce"
+            ],
+            "storageGibiBytes": 50,
+            "storageClass": "gp3"
+          }
+        },
+        "injectors": {},
+        "topologySpread": [
+          {
+            "matchLabelKeys": [],
+            "maxSkew": 1,
+            "minDomains": 1,
+            "nodeAffinityPolicy": "Honor",
+            "nodeTaintsPolicy": "Honor",
+            "topologyKey": "topology.kubernetes.io/zone",
+            "whenUnsatisfiable": "DoNotSchedule"
+          }
+        ],
+        "scheduling": {
+          "podDisruptionBudget": {
+            "minAvailable": 1,
+            "maxUnavailable": null
+          }
+        },
+        "podManagementPolicy": "OrderedReady"
+      }
+    },
+    "deployments": {},
+    "rollouts": {},
+    "daemonsets": {},
+    "cronjobs": {},
+    "jobs": {}
+  },
+  "ingresses": {
+    "nginxes": {},
+    "albs": {}
+  },
+  "storages": {},
+  "serviceGroup": "tournament",
+  "serviceEnv": "test",
+  "namespace": "bigdata"
+}
