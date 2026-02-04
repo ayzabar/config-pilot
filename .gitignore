@@ -1,0 +1,11 @@
+# python stuff
+venv/
+__pycache__/
+*.pyc
+
+# mac stuff
+.DS_Store
+
+# zed/editor stuff
+.zed/
+node_modules/

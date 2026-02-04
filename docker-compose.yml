@@ -1,0 +1,26 @@
+services:
+  schema-server:
+    build: ./schema-server
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./data/schemas:/app/data/schemas
+
+  values-server:
+    build: ./values-server
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./data/values:/app/data/values
+
+  bot-server:
+    build: ./bot-server
+    ports:
+      - "5003:5003"
+    environment:
+      - SCHEMA_SERVICE_URL=http://schema-server:5001
+      - VALUES_SERVICE_URL=http://values-server:5002
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    depends_on:
+      - schema-server
+      - values-server
