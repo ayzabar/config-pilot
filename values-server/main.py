@@ -1,36 +1,43 @@
+import argparse
 import json
 import os
 
-from flask import Flask, jsonify
+from flask import Flask, abort, jsonify
 
-app = Flask(__name__) # initializing the values server
+app = Flask(__name__)
 
-# this is where we store the actual app configs (matchmaking, chat, etc.)
-# docker will mount this to a local folder later
-VALUES_DIR = os.getenv("VALUES_DIR", "data/values")
+VALUES_DIR = "/app/data/values"
+
+def load_values(app_name):
+    safe_name = os.path.basename(app_name)
+    file_path = os.path.join(VALUES_DIR, f"{safe_name}.value.json")
+
+    if not os.path.exists(file_path):
+        return None
+
+    try:
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error reading values: {e}")
+        return None
 
 @app.route("/<app_name>", methods=["GET"])
 def get_values(app_name):
-    # constructing the path to the json file
-    # we expect files like matchmaking.json or tournament.json
-    filename = f"{app_name}.json"
-    file_path = os.path.join(VALUES_DIR, filename)
-
-    # checking if the file actually exists so we don't go boom
-    if not os.path.exists(file_path):
-        return jsonify({"error": "config file not found kanka"}), 404
-
-    try:
-        # opening the file and parsing the json
-        with open(file_path, 'r') as f:
-            values_data = json.load(f)
-
-        # sending the config back to the bot-server
-        return jsonify(values_data)
-
-    except Exception as e:
-        # catching any weird file reading errors
-        return jsonify({"error": f"failed to load values: {str(e)}"}), 500
+    values = load_values(app_name)
+    if values:
+        return jsonify(values)
+    else:
+        return jsonify({"error": "no values found"}), 404
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5002)
+    parser = argparse.ArgumentParser()
+    # catch docker
+    parser.add_argument('--values-dir', default='/app/data/values', help='Directory containing value files')
+    parser.add_argument('--listen', default='0.0.0.0:5002', help='Host and port to listen on')
+    args = parser.parse_args()
+
+    VALUES_DIR = args.values_dir
+    host, port = args.listen.split(':')
+
+    app.run(host=host, port=int(port))
