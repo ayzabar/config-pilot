@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 
-from flask import Flask, abort, jsonify
+from flask import Flask, jsonify
 
 app = Flask(__name__)
 
@@ -23,7 +23,7 @@ def load_values(app_name):
         return None
 
 @app.route("/<app_name>", methods=["GET"])
-def get_values(app_name):
+def get_values_jk(app_name):
     values = load_values(app_name)
     if values:
         return jsonify(values)

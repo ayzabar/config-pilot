@@ -1,11 +1,20 @@
-# python stuff
+# Python sanal ortamı (Bunu sakin gonderme)
 venv/
-__pycache__/
-*.pyc
+env/
+.env
 
-# mac stuff
+# Derlenmis Python dosyalari
+__pycache__/
+*.py[cod]
+
+# Log dosyalari
+*.log
+bot_debug.log
+
+# MacOS kullaniyorsan sistem copleri
 .DS_Store
 
-# zed/editor stuff
+# IDE ayarlari (VSCode/PyCharm vs)
+.vscode/
+.idea/
 .zed/
-node_modules/

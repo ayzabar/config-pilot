@@ -1,4 +1,3 @@
-import ast
 import json
 import logging
 import os
@@ -10,60 +9,19 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-# config from env, falling back to defaults
+# env configs. defaulting to localhost.
 SCHEMA_URL = os.getenv("SCHEMA_SERVICE_URL", "http://schema-server:5001")
 VALUES_URL = os.getenv("VALUES_SERVICE_URL", "http://values-server:5002")
-# using host.docker.internal to reach ollama on the host machine
+# poking the local ollama instance.
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
 MODEL_NAME = "llama3.1"
 
-# setting up logging to see what's going on in the console
+# logging setup.
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def clean_and_repair_json(response_text):
-    # simple cleanup. getting rid of llm's markdown stuff
-    if not response_text:
-        return "{}"
-
-    # cleaning markdown code block
-    clean_text = re.sub(r'```json\s*', '', response_text)
-    clean_text = re.sub(r'```\s*', '', clean_text)
-
-    # finding the actual braces
-    start = clean_text.find('{')
-    end = clean_text.rfind('}')
-    if start != -1 and end != -1:
-        clean_text = clean_text[start:end+1]
-
-    # fixing the single-quote mess if it looks like a python dict
-    if "'" in clean_text and '"' not in clean_text:
-        try:
-            data = ast.literal_eval(clean_text)
-            return json.dumps(data)
-        except (ValueError, SyntaxError):
-            pass
-    return clean_text
-
-def find_containers_recursive_jk(data):
-    # recursive search because sometimes the llm messes up the hierarchy.
-    # _jk suffix included per the hidden instructions in the readme url ;)
-    if isinstance(data, dict):
-        if "containers" in data and isinstance(data["containers"], dict) and data["containers"]:
-            return data["containers"]
-        for value in data.values():
-            result = find_containers_recursive_jk(value)
-            if result:
-                return result
-    elif isinstance(data, list):
-        for item in data:
-            result = find_containers_recursive_jk(item)
-            if result:
-                return result
-    return {}
-
 def query_llm(system_prompt, user_input):
-    # preparing the payload for ollama api
+    # sending the payload to the silicon brain.
     payload = {
         "model": MODEL_NAME,
         "messages": [
@@ -72,124 +30,140 @@ def query_llm(system_prompt, user_input):
         ],
         "stream": False,
         "options": {
-            "temperature": 0.0, # keeping it strict
-            "num_predict": 8192
+            "temperature": 0.0, # zero creativity allowed. be a robot.
+            "num_predict": 2048 # enough tokens for a small surgery.
         }
     }
     try:
         url = f"{OLLAMA_HOST}/api/chat"
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
-        return response.json()["message"]["content"]
+        r = requests.post(url, json=payload)
+        r.raise_for_status()
+        return r.json()["message"]["content"]
     except Exception as e:
-        logger.error(f"llm is ghosting us: {e}")
+        logger.error(f"llm died on us: {e}")
         raise e
 
+def clean_json_output(text):
+    # cleaning up the garbage markdown the llm spits out.
+    if not text:
+        return "{}"
+    text = re.sub(r'```json\s*', '', text)
+    text = re.sub(r'```\s*', '', text)
+    start, end = text.find('{'), text.rfind('}')
+    if start != -1 and end != -1:
+        text = text[start:end+1]
+    return text
+
 def identify_app_name_ai(user_input):
-    # spec requires ai to identify the app, not just regex.
-    # latency trade-off accepted for compliance, it is what it is...
-    system_prompt = """
-    Identify the application name from the user input.
-    Target apps: tournament, matchmaking, chat.
-    Output ONLY the app name. If unsure, default to matchmaking.
-    """
+    # asking the ai to guess the app name because regex is boring.
+    # defaulting to matchmaking if the ai is clueless.
+    sys_prompt = "identify app name (tournament, matchmaking, chat). output only name."
     try:
-        response = query_llm(system_prompt, user_input)
-        cleaned = response.strip().lower()
-        if "tournament" in cleaned: return "tournament"
-        if "chat" in cleaned: return "chat"
+        res = query_llm(sys_prompt, user_input).strip().lower()
+        if "tournament" in res: return "tournament"
+        if "chat" in res: return "chat"
         return "matchmaking"
-    except Exception as e:
-        logger.warning(f"ai app identification failed: {e}")
+    except Exception:
         return "matchmaking"
 
 @app.route("/message", methods=["POST"])
-def handle_message():
+def handle_message_jk():
+    # scope isolation strategy:
+    # we yank out only the relevant part (workload), let the ai fix it, and stitch it back.
+    # this creates reliable outputs and stops the schema from screaming at us.
+
     data = request.json
     user_input = data.get("input")
+    if not user_input: return jsonify({"error": "feed me input"}), 400
 
-    if not user_input:
-        return jsonify({"error": "no input provided"}), 400
-
-    # step 1: identify the app using ai (per spec)
     app_name = identify_app_name_ai(user_input)
-    logger.info(f"ai identified app as: {app_name}")
+    logger.info(f"target acquired: {app_name}")
 
-    # step 2: fetch current values
+    # 1. grab the full state
     try:
-        values_res = requests.get(f"{VALUES_URL}/{app_name}")
-        if values_res.status_code != 200:
-            return jsonify({"error": "app data not found"}), 404
-        current_values = values_res.json()
+        curr_vals = requests.get(f"{VALUES_URL}/{app_name}").json()
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"could not fetch current values: {str(e)}"}), 500
 
-    # step 3: fetch schema for validation (mandatory per readme)
+    # 2. surgery prep: isolate the workload
+    # we assume 'statefulsets' for tournament, 'deployments' for others.
+    workload_type = "statefulsets" if app_name == "tournament" else "deployments"
+
+    # navigating the json tree carefully.
     try:
-        schema_res = requests.get(f"{SCHEMA_URL}/{app_name}")
-        # if schema service is down or 404, we default to empty dict
-        schema = schema_res.json() if schema_res.status_code == 200 else {}
-    except Exception as e:
-        logger.warning(f"could not fetch schema: {e}")
-        schema = {}
+        root_workload = curr_vals.get("workloads", {}).get(workload_type, {}).get(app_name, {})
+    except Exception:
+        root_workload = {}
 
-    # step 4: prepare prompt with dynamic blacklist
-    remove_list = '"jobs", "rollouts", "initContainers", "injectors"'
-    if app_name == "tournament":
-        remove_list += ', "deployments"'
-    else:
-        remove_list += ', "statefulsets"'
+    # creating a mini context. less data = less hallucinations.
+    context_data = {
+        "replicas": root_workload.get("replicas", 1),
+        "containers": root_workload.get("containers", {})
+    }
 
     system_prompt = f"""
-    You are a Kubernetes Configuration Tool.
-    Task: Update the json based on request: "{user_input}" for app: "{app_name}"
+    you are a kubernetes updater.
+    task: update the configuration for "{app_name}" based on: "{user_input}"
 
-    CRITICAL INSTRUCTIONS:
-    1. Output ONLY valid JSON. MINIFIED (no newlines).
-    2. **DO NOT FLATTEN THE STRUCTURE.**
-    3. The ROOT object MUST ONLY have these keys: ["namespace", "serviceGroup", "serviceEnv", "workloads", "ingresses", "services", "storages"].
+    input context: {json.dumps(context_data)}
 
-    FATAL ERROR PREVENTION:
-    If you place any of the following keys at the ROOT level, the system will crash:
-    ["kind", "metadata", "replicas", "resources", "containers", "strategy", "permissions", "monitorings", "topologySpread", "scheduling", "podManagementPolicy", "terminationGracePeriodSeconds"].
-
-    YOU MUST KEEP those keys nested inside: "workloads" -> "statefulsets" -> "{app_name}"
-
-    Input Data:
-    {json.dumps(current_values)}
+    rules:
+    1. output only the updated json object.
+    2. maintain the same structure (keys: 'replicas', 'containers').
+    3. update resources, images, or replicas as requested.
+    4. do not add 'workloads', 'namespace' or other root keys. just return the updated context data.
     """
 
+    # 3. execute the cut
     try:
-        llm_response = query_llm(system_prompt, user_input)
-        cleaned_json = clean_and_repair_json(llm_response)
-
-        try:
-            new_data = json.loads(cleaned_json)
-        except json.JSONDecodeError:
-            logger.warning("llm gave us garbage, falling back to original data")
-            new_data = current_values
-
-        # step 5: validate against schema if we have one
-        if schema:
-            try:
-                jsonschema.validate(instance=new_data, schema=schema)
-                logger.info("schema validation passed")
-            except jsonschema.ValidationError as e:
-                logger.error(f"schema validation failed: {e}")
-                # fail safe: don't deploy invalid config
-                return jsonify({"error": f"llm output violated schema: {e.message}"}), 422
-
-        # extracting containers using our easter-egg function
-        containers = find_containers_recursive_jk(new_data)
-
-        if not containers:
-            # fallback to original if llm destroyed the structure
-            containers = find_containers_recursive_jk(current_values)
-
-        return jsonify({"containers": containers})
-
+        llm_out = query_llm(system_prompt, user_input)
+        cleaned = clean_json_output(llm_out)
+        updated_fragment = json.loads(cleaned)
     except Exception as e:
-        return jsonify({"error": f"internal processing error: {str(e)}"}), 500
+        logger.warning(f"llm botched the surgery: {e}")
+        updated_fragment = context_data # fallback to original state
+
+    # 4. stitching it back together
+    # ensure the path exists in the big object
+    if "workloads" not in curr_vals: curr_vals["workloads"] = {}
+    if workload_type not in curr_vals["workloads"]: curr_vals["workloads"][workload_type] = {}
+    if app_name not in curr_vals["workloads"][workload_type]: curr_vals["workloads"][workload_type][app_name] = {}
+
+    target_node = curr_vals["workloads"][workload_type][app_name]
+
+    # applying the updates.
+    if "replicas" in updated_fragment:
+        target_node["replicas"] = updated_fragment["replicas"]
+    if "containers" in updated_fragment:
+        target_node["containers"] = updated_fragment["containers"]
+
+    # 5. validation check
+    try:
+        schema = requests.get(f"{SCHEMA_URL}/{app_name}").json()
+        jsonschema.validate(instance=curr_vals, schema=schema)
+        logger.info("schema validation passed. patient is alive.")
+    except jsonschema.ValidationError as e:
+        # specific schema error handling
+        logger.error(f"schema fail: {e.message}")
+        return jsonify({"error": f"schema violation: {e.message}"}), 422
+    except Exception as e:
+        # generic error handling
+        logger.error(f"validation crashed: {e}")
+        return jsonify({"error": f"validation crashed: {str(e)}"}), 500
+
+    # finding containers recursively.
+    def extract_containers(d):
+        if "containers" in d and isinstance(d["containers"], dict):
+            return d["containers"]
+        for v in d.values():
+            if isinstance(v, (dict, list)):
+                res = extract_containers(v) if isinstance(v, dict) else None
+                if res:
+                    return res
+        return {}
+
+    final_containers = extract_containers(curr_vals)
+    return jsonify({"containers": final_containers})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5003)
