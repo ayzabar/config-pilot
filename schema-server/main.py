@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 
@@ -6,7 +5,7 @@ from flask import Flask, jsonify
 
 app = Flask(__name__)
 
-SCHEMA_DIR = "/app/data/schemas"
+SCHEMA_DIR = os.getenv("SCHEMA_DIR", "/app/data/schemas")
 
 def load_schema_jk(app_name):
     safe_name = os.path.basename(app_name)
@@ -31,12 +30,5 @@ def get_schema(app_name):
         return jsonify({"error": "schema not found"}), 404
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--schema-dir', default='/app/data/schemas', help='Directory containing schema files')
-    parser.add_argument('--listen', default='0.0.0.0:5001', help='Host and port to listen on')
-    args = parser.parse_args()
-
-    SCHEMA_DIR = args.schema_dir
-    host, port = args.listen.split(':')
-
-    app.run(host=host, port=int(port))
+    port = int(os.getenv("PORT", 5001))
+    app.run(host="0.0.0.0", port=port)

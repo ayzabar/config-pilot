@@ -1,5 +1,11 @@
 # AI-Assisted Configuration Manager: Implementation Report
 
+**Author:** Bahri Ayzabar
+**Role:** DevOps Engineer Intern Candidate
+**Date:** February 2026
+
+---
+
 Building a reliable configuration manager with a local LLM is a unique engineering challenge. This document outlines how I tamed the unpredictability of local AI, the architectural choices I made, and why I treated the LLM as a tool rather than a wizard.
 
 ## 1. The Brain: Llama 3.1 (Local)
@@ -50,6 +56,18 @@ _AI was used as a helper during development, think of it as a senior giving guid
 ---
 
 ## 4. Challenges & Solutions
+
+### The "Router" Ambiguity (Strict Persona Pattern)
+
+**Problem:** The local LLM occasionally struggled to classify user intent correctly. It would often produce conversational output (e.g., "The application is tournament") or fail to map generic terms like "game" to the correct service (`matchmaking`).
+
+**Solution:** Instead of writing complex if-else chains, I solved this via **Strict Persona Prompting**.
+
+1.  **Persona Adoption:** I instructed the LLM to act exclusively as a "Strict API Router," providing it with a explicit keyword map (e.g., mapping "cup", "bracket" -> `tournament`).
+2.  **Negative Constraints:** I used strong negative constraints in the system prompt (e.g., "Do NOT output punctuation," "Do NOT write full sentences") to force a deterministic, single-word output.
+3.  **Safety Net:** As a final layer of defense, if the model breaks character and outputs text, a Python-based sanitizer strips the noise and searches for the valid service keywords within the raw response.
+
+This approach proves that with the right prompting strategy, even small local models can handle logic routing reliably.
 
 ### The "Flattening" Issue
 

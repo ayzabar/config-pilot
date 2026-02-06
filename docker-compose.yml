@@ -1,22 +1,26 @@
 services:
   schema-server:
     build: ./schema-server
+    container_name: schema-server
+    restart: always
     ports:
       - "5001:5001"
     volumes:
       - ./data:/app/data
-    command: ["python", "main.py", "--schema-dir", "/app/data/schemas"]
 
   values-server:
     build: ./values-server
+    container_name: values-server
+    restart: always
     ports:
       - "5002:5002"
     volumes:
       - ./data:/app/data
-    command: ["python", "main.py", "--values-dir", "/app/data/values"]
 
   bot-server:
     build: ./bot-server
+    container_name: bot-server
+    restart: always
     ports:
       - "5003:5003"
     environment:
