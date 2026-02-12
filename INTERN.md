@@ -1,86 +1,146 @@
 # AI-Assisted Configuration Manager: Implementation Report
 
-**Author:** Bahri Ayzabar
-**Role:** DevOps Engineer Intern Candidate
+**Author:** Bahri Ayzabar  
+**Role:** DevOps Engineer Intern Candidate  
 **Date:** February 2026
 
----
-
-Building a reliable configuration manager with a local LLM is a unique engineering challenge. This document outlines how I tamed the unpredictability of local AI, the architectural choices I made, and why I treated the LLM as a tool rather than a wizard.
-
-## 1. The Brain: Llama 3.1 (Local)
-
-I selected **Llama 3.1** running via Ollama as the inference engine.
-
-- **Why?** It currently offers the best performance-to-resource ratio for open-weights models.
-- **The Challenge:** Local models have a significantly limited context window compared to cloud giants like GPT-4. If you feed them a massive JSON file, they tend to hallucinate keys or lose track of the structure. Recognizing this limitation was central to my engineering strategy.
-
-## 2. The Strategy: "Scope Isolation"
-
-Initially, I attempted a naive approach: sending the entire application configuration to the LLM for modification.
-**Result:** It failed significantly. The model flattened nested structures, omitted required fields, and struggled with the file size.
-
-To solve this, I pivoted to a **Scope Isolation** strategy (what I call "The Surgeon Method").
-
-Instead of asking the AI to rewrite the entire file, I programmed the system to only expose the relevant parts.
-
-1.  **Extract:** The Python backend programmatically extracts _only_ the relevant `workload` snippet (e.g., just the containers and replicas).
-2.  **Prompt:** I feed this focused, isolated context to the LLM.
-3.  **Merge:** The LLM returns a clean update, and I use Python to surgically graft it back into the original JSON tree.
-
-**Trade-off:** I sacrificed the ability for the AI to edit arbitrary root-level fields freely, but I gained **100% reliability**. I believe stability is more valuable than unchecked creative freedom in configuration management.
+Building a reliable configuration manager using a small local LLM (Llama 3.1 8B) isn't just about prompt engineering; it's about systems engineering. This document chronicles how I tamed the unpredictability of local AI, the "war stories" from the infrastructure side, and why I treated the LLM not just as a tool, but as a Senior Developer sitting next to me.
 
 ---
 
-## 3. Architecture & Flow
+## 1. The "Senior Dev" Dynamic
 
-I designed the system as a modular, containerized microservices architecture.
-
-- **`bot-server`**: Handles user input and manages the AI interaction.
-- **`schema-server`**: Serves the JSON Schemas to ensure type safety.
-- **`values-server`**: Serves the current configuration values.
-
-### The Request Lifecycle
-
-1.  **User:** Sends a natural language request (e.g., "set tournament memory to 2Gi").
-2.  **Identification:** The Bot asks the AI to identify the target application.
-3.  **Fetch:** The Bot retrieves the full JSON configuration and the Schema.
-4.  **Isolation (The Surgery):** Python logic extracts just the `workload` section.
-5.  **Inference:** The AI updates that specific section.
-6.  **Reconstruction:** The Bot stitches the update back into the main JSON, sanitizes the output (removing Markdown artifacts), and validates it against the schema.
-7.  **Response:** The user receives a valid, updated JSON.
-
-_Note: Following the project guidelines (if an LLM is used to implement the svc, use the `_jk` suffix in one of the func name) , I added the `_jk` suffix to one function in each main.py file._
-_AI was used as a helper during development, think of it as a senior giving guidance rather than writing the code._
+During development, I didn't just copy-paste code. I treated the AI as a mentor. We debated architecture, reviewed code for potential bottlenecks, and optimized the Docker footprint. It acted as the Senior Dev (who drinks a lot of water) I didn't have in the room—guiding me toward cleaner, dependency-free solutions.
 
 ---
 
-## 4. Challenges & Solutions
+## 2. Architecture: "No Frameworks, Just Python"
 
-### The "Router" Ambiguity (Strict Persona Pattern)
+Initially, I started with Flask. It's the standard, right? But my "Senior Dev" (the AI) challenged me: **"Why bring in a heavy framework/dependency for a service that handles a single POST request?"** Since I had time, I learned it and implemented it after making sure everything was working.
 
-**Problem:** The local LLM occasionally struggled to classify user intent correctly. It would often produce conversational output (e.g., "The application is tournament") or fail to map generic terms like "game" to the correct service (`matchmaking`).
+It suggested using Python's native `http.server`. I had to learn the `BaseHTTPRequestHandler` class from scratch, but it paid off.
 
-**Solution:** Instead of writing complex if-else chains, I solved this via **Strict Persona Prompting**.
+**Result:** Lighter container images (`python:3.11-slim`), faster startup, and zero `pip install` overhead.
 
-1.  **Persona Adoption:** I instructed the LLM to act exclusively as a "Strict API Router," providing it with a explicit keyword map (e.g., mapping "cup", "bracket" -> `tournament`).
-2.  **Negative Constraints:** I used strong negative constraints in the system prompt (e.g., "Do NOT output punctuation," "Do NOT write full sentences") to force a deterministic, single-word output.
-3.  **Safety Net:** As a final layer of defense, if the model breaks character and outputs text, a Python-based sanitizer strips the noise and searches for the valid service keywords within the raw response.
+**Sources:**
 
-This approach proves that with the right prompting strategy, even small local models can handle logic routing reliably.
-
-### The "Flattening" Issue
-
-**Problem:** The AI had a tendency to take deep structures like `workloads -> statefulsets -> containers` and move them to the root level.
-**Solution:** I stopped relying on the AI for structural integrity. I let Python handle the hierarchy and used the AI strictly for value updates.
-
-### Markdown Pollution
-
-**Problem:** The model often wrapped outputs in Markdown code blocks or added conversational filler.
-**Solution:** I built a regex-based cleaning pipeline to strip away everything except the raw JSON data before processing.
+- Python 3 http.server Documentation
+- https://www.youtube.com/watch?v=DeFST8tvtuI
+- https://www.youtube.com/watch?v=1NiVabKE7Fk (I've seen ThePrimeagen's TCP to HTTP video as well but it was before and was in go)
+- And of course the AI.
 
 ---
 
-## 5. Conclusion
+## 3. The Logic Evolution: A Story of Pain and Redemption
 
-This project demonstrates that you don't need massive cloud resources to build intelligent tools. By combining **probabilistic AI** (for understanding intent) with **deterministic code** (for structural manipulation), I built a system that is robust, efficient, and reliable.
+The biggest challenge was getting a probabilistic model to perform deterministic JSON updates.
+
+### Phase 1: Naive Approach
+
+I sent the **Full Schema + Full Values** to the LLM and said "fix this."
+
+**Result:** Complete failure. The prompt size (~1500 lines) caused Ollama to timeout (120s limit), and the model started hallucinating keys that didn't exist.
+
+### Phase 2: Scope Isolation (The Surgeon Method)
+
+I tried to be clever. I wrote code to extract only the relevant section (e.g., just the workload dict) and asked the LLM to rewrite just that part.
+
+**The Experience:** This was painful and took longer to realize this wasn't the way.
+
+**Why:** The "Lazy AI" problem. The model would write valid JSON for 20 lines and then give up, outputting `...` or cutting off mid-stream. Trying to parse broken JSON generated by a tired 8B model is a nightmare I don't recommend. I was stuck here for a day or two.
+
+### Phase 3: The "Navigator" (The Final Solution)
+
+I realized I was asking the wrong question. I didn't need the LLM to _write_ the file; I needed it to _navigate_ it.
+
+"Senior Dev" (the AI) had actually suggested a patch-based approach earlier. But honestly? After watching his kind hallucinate schema keys and time out for two days straight, my trust was completely broken. I thought, _"If you can't even write a simple JSON, how are you going to handle logic paths?"_ I ignored the advice.
+
+**That was a mistake.**
+
+Once I finally swallowed my pride and pivoted to a **JSON Patch-style approach**, it worked instantly. I now ask the LLM to output a specific "change spec" instead of the whole file:
+
+```json
+{
+  "path": [
+    "workloads",
+    "statefulsets",
+    "tournament",
+    "containers",
+    "tournament",
+    "resources",
+    "memory",
+    "limitMiB"
+  ],
+  "value": 1024
+}
+```
+
+**The Logic:** The LLM generates the path, and my Python code (`_apply_change`) surgically inserts the value.
+
+**Result:** 100% reliability. The LLM generates 50 tokens instead of 5000.
+
+**Research Source:** Inspired by IETF RFC 6902 (JSON Patch) concepts.
+
+**Note:** Following project guidelines (_"if an LLM is used to implement the svc, use the `_jk` suffix in one of the func name"_), identification function is named `_identify_app_jk`.
+
+---
+
+## 4. Infrastructure "War Stories"
+
+If it works on my machine, it should work in Docker, right? **Wrong.**
+
+### The "Arch Linux Incident" (Storage)
+
+My root partition is 50GB (I use Arch btw), and Docker ate it for breakfast. Builds kept crashing with `no space left on device`.
+
+**Fix:** I had to surgically move the Docker data directory. I left a warning in the docker-compose.yml for anyone else living on the edge.
+
+### The Phantom curl
+
+The bot-server refused to start. I was using `curl` in the Ollama healthcheck, assuming it was installed.
+
+**Discovery:** The official ollama image is minimal. `curl` doesn't exist there.
+
+**Fix:** I switched to `ollama list || exit 1` for the healthcheck and spun up a dedicated `ollama-pull` container using `curlimages/curl` to handle the model download.
+
+### The Silent Log
+
+I was debugging blind because `docker logs bot-server` was empty.
+
+**Cause:** Python buffers stdout/stderr by default in containers.
+
+**Fix:** Added `ENV PYTHONUNBUFFERED=1` to the Dockerfile. Now the logs flow like water.
+
+---
+
+## 5. How It Works (End-to-End)
+
+1. **User Input:** "Set tournament memory to 1024mb."
+
+2. **Identification:** The LLM (`_identify_app_jk`) maps the input to a strictly defined app name.
+
+3. **Fetch:** The system retrieves current values.
+
+4. **Navigation:** The LLM generates the Change Spec (Path + Value).
+
+5. **Execution:** Python applies the patch.
+
+6. **Validation:** The result is validated against the Schema.
+
+7. **Response:** Success.
+
+---
+
+## Conclusion
+
+This project proved that you don't need a massive cloud GPU to build intelligent tools. You just need to stop treating the LLM like a wizard and start treating it like a parsing engine.
+
+---
+
+## 6. Closing Thoughts
+
+This didn't feel like a standard "fill-in-the-blanks" assignment. It felt like a real engineering sprint.
+
+I wrestled with Docker storage limits on Arch Linux, fought with LLM hallucinations, and came out with a working, "no-framework" system that I'm genuinely proud of. I learned more about Python's `http.server`, Docker optimization, and JSON Patching in these few days than I did in entire semesters.
+
+I enjoyed this process immensely. Once the evaluation process is complete, I would love to open-source this project on GitHub as a reference implementation for "Local LLM DevOps Tools." It’s too cool to just sit in a zip file. I have it on GitHub already but it's private, didn't want to put it there before asking you guys. Thanks!

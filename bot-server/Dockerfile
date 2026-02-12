@@ -1,15 +1,14 @@
-# using a slim python image to keep it light
-from python:3.11-slim
+FROM python:3.11-slim
 
-# setting the working directory inside the container
-workdir /app
+WORKDIR /app
 
-# copying requirements first to leverage docker cache
-copy requirements.txt .
-run pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir jsonschema
 
-# copying the rest of the code
-copy . .
+COPY app.py .
 
-# firing up the service
-cmd ["python", "main.py"]
+EXPOSE 5003
+
+ENV PYTHONUNBUFFERED=1
+
+ENTRYPOINT ["python", "app.py"]
+CMD ["--listen", "0.0.0.0:5003"]

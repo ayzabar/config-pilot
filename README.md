@@ -241,4 +241,4 @@ The finished project is expected to follow this folder structure:
 ## Notes
 
 -   Simplicity and clarity are preferred over over-engineering.
--   Reasonable assumptions are allowed as long as they are documented.# intern-homework-master
+-   Reasonable assumptions are allowed as long as they are documented.

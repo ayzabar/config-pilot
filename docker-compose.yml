@@ -1,34 +1,75 @@
 services:
+  # ollama runs the llm locally
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    restart: always
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 10s
+
+  # pulls the llama3.1 model before we start the bot service
+  # this is kinda important bc the bot won't work without it (tested. how? you're asking)
+  # little context: my root partition is only 50GB and docker ate it all for breakfast. (arch btw)
+  # the build kept crashing on "no space left on device" until I moved /var/lib/docker.
+  # one does not simply install docker on a 50GB partition. -boromir segfault
+  ollama-pull:
+    image: curlimages/curl:latest
+    container_name: ollama-pull
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "pulling llama3.1 model..."
+        curl -X POST http://ollama:11434/api/pull -d '{"name": "llama3.1"}' --no-buffer
+        echo "model pull complete"
+    restart: "no"
+
+  # serves json schemas for apps
   schema-server:
     build: ./schema-server
     container_name: schema-server
-    restart: always
     ports:
       - "5001:5001"
     volumes:
-      - ./data:/app/data
+      - ./data/schemas:/data/schemas:ro
+    restart: always
 
+  # serves current config values for apps
   values-server:
     build: ./values-server
     container_name: values-server
-    restart: always
     ports:
       - "5002:5002"
     volumes:
-      - ./data:/app/data
+      - ./data/values:/data/values:ro
+    restart: always
 
+  # main bot service that does the ai magic
   bot-server:
     build: ./bot-server
     container_name: bot-server
-    restart: always
     ports:
       - "5003:5003"
-    environment:
-      - SCHEMA_SERVICE_URL=http://schema-server:5001
-      - VALUES_SERVICE_URL=http://values-server:5002
-      - OLLAMA_HOST=http://host.docker.internal:11434
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
-      - schema-server
-      - values-server
+      ollama:
+        condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
+      schema-server:
+        condition: service_started
+      values-server:
+        condition: service_started
+    restart: always
+
+volumes:
+  ollama_data:
