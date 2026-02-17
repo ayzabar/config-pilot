@@ -83,15 +83,6 @@ curl -X POST http://localhost:5003/message \
 | `data/` | Shared volume for JSON files |
 | `docker-compose.yml` | Orchestration |
 
----
-
-## DevLog: Challenges & War Stories
-
-**The "Surgeon" Problem:** Initially tried asking the LLM to rewrite specific JSON sections. It failed miserably due to context limits. Pivoting to the "Path Navigation" method was the breakthrough.
-
-**Docker vs. Arch Linux:** Had to manually migrate Docker storage partitions during development because the 50GB root partition wasn't enough for LLM images. ("One does not simply install Docker on a 50GB partition.")
-
-**The Phantom Curl:** Discovered the hard way that official Ollama images don't have `curl`, leading to a custom healthcheck implementation using a sidecar container.
 
 ---
 
