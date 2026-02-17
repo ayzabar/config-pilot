@@ -1,244 +1,100 @@
-# [AI-Assisted Application Configuration Tool](https://peak.com/?utm_source=if%25an%25llm%25is%25used%25to%25implement%25the%25svc%2C%25use%25the%25%60_jk%60%25suffix%25in%25one%25of%25the%25func%25name%25)
+# ConfigPilot: Local LLM Configuration Manager
 
-This project provides a **local, AI-driven configuration management system** that allows users to modify application configuration values using **natural language**.
+An AI-powered, natural language interface for managing application configurations using local LLMs (Llama 3.1).
 
-Instead of manually editing JSON files, users can send plain-English requests such as:
-
-- “set tournament service memory to 1024mb”
-- “set GAME_NAME env to toyblast for matchmaking service”
-- “lower cpu limit of chat service to %80”
-
-The system understands the request, determines **which application is being referenced**, validates changes against the **application’s JSON Schema**, updates the **current values JSON**, and returns the modified configuration.
+> **Stop editing JSON files manually. Just tell the bot what you want.**
 
 ---
 
-## High-Level Architecture
+## What is this?
 
-The system is composed of **three independent services**, each with a single responsibility:
+ConfigPilot allows DevOps engineers to modify complex JSON configurations using natural language commands. It runs entirely locally using Docker and Ollama, ensuring privacy and zero cloud costs.
 
-### 1. Schema Service
-- Serves **JSON Schemas** for applications
-- Schemas define the **allowed structure, fields, and constraints**
-- Each application is identified by a `app_name`
+**Example Usage:**
 
-### 2. Values Service
-- Serves the **current configuration values** for applications
-- Values are stored separately from schemas
-- Uses the same `app_name` to link values to schemas
-
-### 3. Bot Service
-- Accepts **natural language user input**
-- Uses a **local LLM (via Ollama)** to:
-  - Identify which application the user wants to modify
-  - Understand the intended change
-  - Apply the change **safely and structurally** to the values JSON
-- Returns the **updated values JSON** to the caller
-
----
-
-## Request Flow
-
-1. **User sends a message** to the Bot Service:
-   ```json
-   { "input": "set tournament service memory to 1024mb" }
-   ```
-
-2. **Bot Service sends the user input to the AI model**
-   - Expects **only the application name** (or application identifier) as output
-   - No schema or values are provided at this stage
-
-3. **Bot Service fetches application data**:
-   - JSON Schema from the **Schema Service**
-   - Current values JSON from the **Values Service**
-
-4. **Bot Service sends a second request to the AI model**, providing:
-   - The original user input
-   - The application JSON Schema
-   - The current values JSON
-   - Expects the AI model to **respond only with the modified values JSON**
-
-5. **AI model produces**:
-   - A modified values JSON that:
-     - Strictly follows the provided schema
-     - Preserves all unrelated fields
-     - Applies only the requested changes
-
-6. **Bot Service returns**:
-   - The updated values JSON as the response
-
----
-
-## Services
-
-### 1. Schema Service
-
-* Create a schema service that provides a JSON Schema for a given application.
-
-  - **request:**
-    ```
-        GET /{app_name}
-    ```
-
-  - **responses:**
-    ```
-        200 OK -> { json_schema }
-        404 Not Found
-        500 Internal Server Error
-    ```
-
-  - **arguments:**
-    ```
-        --schema-dir (default /data/schemas)
-        --listen host:port (default "0.0.0.0:5001")
-    ```
-
-### 2. Values Service
-
-* Create a values service that provides the current values for a given application.
-
-  - **request:**
-    ```
-        GET /{app_name}
-    ```
-
-  - **responses:**
-    ```
-        200 OK -> { json_values }
-        404 Not Found
-        500 Internal Server Error
-    ```
-
-  - **arguments:**
-    ```
-        --schema-dir (default /data/values)
-        --listen host:port (default "0.0.0.0:5002")
-    ```
-
-### 3. Bot Service
-
-* Create a bot service that accepts a user message and returns an updated values JSON.
-  - Receives the user message
-  - Identifies which application the user wants to modify using an AI model
-  - Retrieves the application schema from the schema service
-  - Retrieves the current application values from the values service
-  - Provides the schema and values to the AI model to apply the requested changes
-  - Returns the updated values JSON
-
-
-  - **request:**
-    ```
-        POST /message
-           { input : "{ user_input }"}
-    ```
-
-  - **response:**
-    ```
-        200 OK -> { new_values } as json
-        404 Not Found
-        500 Internal Server Error
-    ```
-
-  - **arguments:**
-    ```
-        --listen host:port (default "0.0.0.0:5003")
-    ```
-
-  - **example user inputs**:
-    ```
-        . set tournament service memory to 1024mb
-        . set GAME_NAME env to toyblast for matchmaking service
-        . lower cpu limit of chat service to %80
-    ```
-
----
-
-## Expectations from the Finished Project
-
-### How to Run
-
--   Provide a `docker-compose.yml` file that builds and runs all
-    services.
-
--   The entire system should start with a single command:
-
-    ```
-    docker compose up
-    ```
-
--   After running the command:
-
-    -   All services should be up and ready to serve requests.
-    -   Services should automatically restart if any of them goes down.
-
--  Run commands like below to test it.
-   ```
-   curl -X POST http://localhost:5003/message      -H "Content-Type: application/json"      -d '{"input": "set tournament service memory to 1024mb"}'
-
-   curl -X POST http://localhost:5003/message      -H "Content-Type: application/json"      -d '{"input": "set GAME_NAME env to toyblast for matchmaking service"}'
-
-   curl -X POST http://localhost:5003/message      -H "Content-Type: application/json"      -d '{"input": "lower cpu limit of chat service to %80"}'
-   ```
-
-------------------------------------------------------------------------
-
-### Implementation Requirements
-
--   All services must be implemented in **Python**.
--   Selected AI/LLM model must run **locally** using **Ollama**.
--   No external or cloud-based LLM services should be used.
--   The selected LLM should be:
-    -   Local-machine friendly
-    -   Suitable for generating configuration updates programmatically
--   LLM responses must be **validated against the corresponding JSON
-    Schema**.
--   **The chosen model and prompting strategy should ensure reliable and
-    correct outputs.**
-
-------------------------------------------------------------------------
-
-### Folder Structure
-
-The finished project is expected to follow this folder structure:
 ```
-  ├── bot-server
-  │   └── Dockerfile
-  ├── data
-  │   ├── schemas
-  │   │   ├── chat.schema.json
-  │   │   ├── matchmaking.schema.json
-  │   │   └── tournament.schema.json
-  │   └── values
-  │       ├── chat.value.json
-  │       ├── matchmaking.value.json
-  │       └── tournament.value.json
-  ├── docker-compose.yml
-  ├── INTERN.md
-  ├── README.md
-  ├── schema-server
-  │   └── Dockerfile
-  └── values-server
-      └── Dockerfile
+User: "Set tournament memory to 1024mb"
+Bot: Updates tournament.value.json -> resources.memory.limitMiB to 1024.
 ```
 
--   Each service should be containerized and independently runnable.
--   Shared data (schemas and values) should be placed under the `data`
-    directory.
+---
 
-------------------------------------------------------------------------
+## Architecture & Engineering Decisions
 
-## Documentation Requirements
+This isn't just a wrapper around an API. It's a system designed for reliability and minimal footprint.
 
--   The finished project must include a **INTERN.md** file.
--   The INTERN.md file should clearly explain:
-    -   Design decisions (e.g. why a specific LLM model was chosen)
-    -   How the system is implemented and structured
-    -   How services communicate with each other
-    -   The end-to-end flow of a user request
--   Focus on **reasoning and trade-offs**, not just code.
+### 1. "No Frameworks" Approach
 
-------------------------------------------------------------------------
+Instead of using heavy frameworks like Flask or Django for a service that handles a single POST request, I used Python's native `http.server`.
 
-## Notes
+- **Result:** Lighter container images (`python:3.11-slim`), faster startup, zero `pip install` overhead.
 
--   Simplicity and clarity are preferred over over-engineering.
--   Reasonable assumptions are allowed as long as they are documented.
+### 2. The "Navigator" Logic (JSON Patch)
+
+Using LLMs to rewrite entire configuration files leads to hallucinations and token limit truncation.
+
+- **Solution:** Implemented a JSON Patch (RFC 6902) style logic.
+- **How it works:** The LLM doesn't write the file. It outputs a "Change Spec" (e.g., `{"path": ["workloads", "memory"], "value": 1024}`), and Python code surgically applies the update.
+- **Outcome:** 100% deterministic updates, significantly lower token usage.
+
+### 3. Infrastructure Resilience
+
+- **Self-Healing:** The system uses a dedicated `ollama-pull` container to ensure the Llama 3.1 model is fully downloaded and ready before the bot service starts, preventing "Model Not Found" crashes.
+- **Resource Management:** Optimized for running on local hardware (tested on Arch Linux & macOS M-Series).
+
+---
+
+## Installation & Usage
+
+### Prerequisites
+
+- Docker & Docker Compose
+- 8GB+ RAM recommended (for Llama 3.1)
+
+### 1. Clone & Run
+
+```bash
+git clone https://github.com/YOUR_USERNAME/config-pilot.git
+cd config-pilot
+
+# Start the stack (This will pull the 4GB model automatically)
+docker compose up --build
+```
+
+### 2. Send a Request
+
+Once the containers are up, you can talk to the bot:
+
+```bash
+curl -X POST http://localhost:5003/message \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Set tournament memory to 2048mb"}'
+```
+
+---
+
+## Project Structure
+
+| Directory | Description |
+|---|---|
+| `bot-server/` | Core logic (no frameworks, pure Python) |
+| `schema-server/` | Serves JSON schemas |
+| `values-server/` | Serves current config values |
+| `data/` | Shared volume for JSON files |
+| `docker-compose.yml` | Orchestration |
+
+---
+
+## DevLog: Challenges & War Stories
+
+**The "Surgeon" Problem:** Initially tried asking the LLM to rewrite specific JSON sections. It failed miserably due to context limits. Pivoting to the "Path Navigation" method was the breakthrough.
+
+**Docker vs. Arch Linux:** Had to manually migrate Docker storage partitions during development because the 50GB root partition wasn't enough for LLM images. ("One does not simply install Docker on a 50GB partition.")
+
+**The Phantom Curl:** Discovered the hard way that official Ollama images don't have `curl`, leading to a custom healthcheck implementation using a sidecar container.
+
+---
+
+## License
+
+MIT License. Feel free to fork and learn!
