@@ -1,20 +1,15 @@
-# Python sanal ortamı (Bunu sakin gonderme)
 venv/
 env/
 .env
 
-# Derlenmis Python dosyalari
 __pycache__/
 *.py[cod]
 
-# Log dosyalari
 *.log
 bot_debug.log
 
-# MacOS kullaniyorsan sistem copleri
 .DS_Store
 
-# IDE ayarlari (VSCode/PyCharm vs)
 .vscode/
 .idea/
 .zed/
